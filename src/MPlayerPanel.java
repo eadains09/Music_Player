@@ -1,0 +1,277 @@
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.ArrayList;
+
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+
+
+@SuppressWarnings("serial")
+public class MPlayerPanel extends JPanel {
+	
+	private JPanel nowPlayingPanel;
+	private JButton playButton, stopButton, exitButton, loadMp3Button, saveButton, 
+					openButton, searchButton, clearSearchButton, addToQButton, clearNowPlayingButton;
+	private JTextField searchField;
+	private JScrollPane scrollPane, nowPlayScroll;
+	private JTable table, nowPlayingTable = null;
+	private PlayerBackEnd pbe = new PlayerBackEnd();
+	private boolean firstCallMainTable=true, firstCallNowPlayingTable=true;
+	
+	MPlayerPanel() {
+	
+		this.setLayout(new BorderLayout());
+	
+		// buttonPanelTop contains the top row of buttons:
+		// load mp3 files, save and open
+		JPanel buttonPanelTop = new JPanel();
+		buttonPanelTop.setLayout(new GridLayout(1,5));
+		loadMp3Button = new JButton("Load mp3");
+		saveButton = new JButton("Save Library");
+		openButton = new JButton("Load Library");
+		searchButton = new JButton("Search");
+		clearSearchButton = new JButton("Clear Search");
+		searchField = new JTextField();
+
+		loadMp3Button.addActionListener(new MyButtonListener());
+		saveButton.addActionListener(new MyButtonListener());
+		openButton.addActionListener(new MyButtonListener());
+		searchButton.addActionListener(new MyButtonListener());
+		clearSearchButton.addActionListener(new MyButtonListener());
+		
+		buttonPanelTop.add(loadMp3Button);
+		buttonPanelTop.add(saveButton);
+		buttonPanelTop.add(openButton);
+		buttonPanelTop.add(searchField);
+		buttonPanelTop.add(searchButton);
+		buttonPanelTop.add(clearSearchButton);
+		this.add(buttonPanelTop, BorderLayout.NORTH);
+		
+		nowPlayingPanel = new JPanel();
+		nowPlayingPanel.setLayout(new BoxLayout(nowPlayingPanel, BoxLayout.PAGE_AXIS));
+		nowPlayingPanel.setPreferredSize(new Dimension(600, 200));
+		JLabel nowPlay = new JLabel("Now Playing");
+		nowPlay.setAlignmentX(CENTER_ALIGNMENT);
+		
+		
+		nowPlayingPanel.add(nowPlay);
+		
+		// Bottom panel with panels: Play, Stop, Exit buttons
+		JPanel buttonPanelBottom = new JPanel();
+		buttonPanelBottom.setLayout(new GridLayout(1,5));
+		playButton = new JButton("Play");
+		addToQButton = new JButton("Add to Now Playing");
+		clearNowPlayingButton = new JButton("Clear Now Playing");
+		stopButton = new JButton("Stop");
+		exitButton = new JButton("Exit");
+
+		playButton.addActionListener(new MyButtonListener());
+		addToQButton.addActionListener(new MyButtonListener());
+		clearNowPlayingButton.addActionListener(new MyButtonListener());
+		stopButton.addActionListener(new MyButtonListener());
+		exitButton.addActionListener(new MyButtonListener());
+
+		buttonPanelBottom.add(playButton);
+		buttonPanelBottom.add(addToQButton);
+		buttonPanelBottom.add(clearNowPlayingButton);
+		buttonPanelBottom.add(stopButton);
+		buttonPanelBottom.add(exitButton);
+		
+		JPanel bottomPanels = new JPanel();
+		bottomPanels.setLayout(new BoxLayout(bottomPanels, BoxLayout.PAGE_AXIS));
+		
+		bottomPanels.add(nowPlayingPanel);
+		bottomPanels.add(buttonPanelBottom);
+		this.add(bottomPanels, BorderLayout.SOUTH);
+	
+		File songFile = new File ("songs.txt");
+		if (songFile.exists())
+		{
+			pbe.loadLibrary(songFile);
+			pbe.sortSongs();
+			loadTable();
+		}
+	}
+	
+	public void loadTable()
+	{
+		if(!firstCallMainTable)
+		{
+			this.remove(scrollPane);
+		}
+		firstCallMainTable=false;
+		
+		int size = pbe.librarySize();
+		String[][] tableElems = new String[size][4];
+		String[] columnNames = {"Title", "Artist", "Album", "Genre"};
+		for (int i=0; i<size; i++)
+		{
+			tableElems[i][0] = pbe.getSong(i).songTitle;
+			tableElems[i][1] = pbe.getSong(i).artist;
+			tableElems[i][2] = pbe.getSong(i).albumName;
+			tableElems[i][3] = pbe.getSong(i).genre;
+		}
+	
+		// you do not need to change the code below
+		table = new JTable(tableElems, columnNames);
+		scrollPane = new JScrollPane(table);
+		add(scrollPane, BorderLayout.CENTER );
+		
+		updateUI();
+	}
+	
+	public void loadTable(ArrayList<Song> searchSongs)
+	{
+		if (!firstCallMainTable)
+		{
+			this.remove(scrollPane);
+		}
+		firstCallMainTable = false;
+		
+		int size = searchSongs.size();
+		String[][] tableElems = new String[size][4];
+		String[] columnNames = {"Title", "Artist", "Album", "Genre"};
+		for (int i=0; i<size; i++)
+		{
+			tableElems[i][0] = searchSongs.get(i).songTitle;
+			tableElems[i][1] = searchSongs.get(i).artist;
+			tableElems[i][2] = searchSongs.get(i).albumName;
+			tableElems[i][3] = searchSongs.get(i).genre;
+		}
+	
+		// you do not need to change the code below
+		JTable searchTable = new JTable(tableElems, columnNames);
+		scrollPane = new JScrollPane(searchTable);
+		add(scrollPane, BorderLayout.CENTER );
+		
+		updateUI();
+	}
+	
+	public void loadNowPlayingTable()
+	{
+		if (!firstCallNowPlayingTable)
+		{
+			nowPlayingPanel.remove(nowPlayScroll);
+		}
+		
+		firstCallNowPlayingTable = false;
+		
+		ArrayList<Song> nowPlayingSongs = pbe.getNowPlaying();
+		int size = nowPlayingSongs.size();
+		String[][] tableElems = new String[size][2];
+		String[] columnNames = {"Title", "Artist"};
+		for (int i=0; i<size; i++)
+		{
+			tableElems[i][0] = nowPlayingSongs.get(i).songTitle;
+			tableElems[i][1] = nowPlayingSongs.get(i).artist;
+		}
+
+		// you do not need to change the code below
+		nowPlayingTable = new JTable(tableElems, columnNames);
+		nowPlayScroll = new JScrollPane(nowPlayingTable);
+		nowPlayingPanel.add(nowPlayScroll);
+		
+		updateUI();
+	}
+	
+	class MyButtonListener implements ActionListener {
+
+		public void actionPerformed(ActionEvent e) {
+			// The function that does something whenever each button is pressed
+			if (e.getSource() == loadMp3Button) {
+				JFileChooser chooser = new JFileChooser();
+				chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+				int returnVal = chooser.showOpenDialog(getParent());
+				if (returnVal==JFileChooser.APPROVE_OPTION)
+				{
+					File file = chooser.getSelectedFile();
+					if (file.isDirectory())
+					{
+						pbe.loadAllMP3(file);
+					}
+					if (file.isFile())
+					{
+						pbe.loadSingleMP3(file);
+					}
+				}
+				pbe.sortSongs();
+				loadTable();
+			}
+			else if (e.getSource() == saveButton) {
+				JFileChooser chooser = new JFileChooser();
+				int returnVal = chooser.showSaveDialog(getParent());
+				if (returnVal==JFileChooser.APPROVE_OPTION)
+				{
+					File file = chooser.getSelectedFile();
+					pbe.saveLibrary(file);
+				}
+				
+			}
+			else if (e.getSource() == openButton) {
+				JFileChooser chooser = new JFileChooser();
+				int returnVal = chooser.showOpenDialog(getParent());
+				if (returnVal==JFileChooser.APPROVE_OPTION)
+				{
+					File file = chooser.getSelectedFile();
+					pbe.loadLibrary(file);
+					pbe.sortSongs();
+					loadTable();
+				}
+			}
+			else if (e.getSource() == searchButton) {
+				ArrayList<Song> foundSongs = pbe.search(searchField.getText());
+				loadTable(foundSongs);
+			}
+			else if (e.getSource() == clearSearchButton)
+			{
+				searchField.setText(null);
+				loadTable();
+			}
+			else if (e.getSource() == playButton) {
+				int selectedSong = table.getSelectedRow();
+				pbe.playSong(selectedSong);
+				loadNowPlayingTable();
+			}
+			else if(e.getSource() == addToQButton){
+				int selectedSong = table.getSelectedRow();
+				pbe.addToQueue(selectedSong);
+				loadNowPlayingTable();
+			}
+			else if(e.getSource()==clearNowPlayingButton){
+				pbe.clearNowPlaying();
+				loadNowPlayingTable();
+			}
+			else if (e.getSource() == stopButton) {
+				pbe.stopSong();
+			}
+			else if (e.getSource() == exitButton) {
+				// Exit the program
+				System.exit(0);
+			}
+		}
+	}
+	
+	
+	public static void main(String[] args) {
+		JFrame frame = new JFrame ("Mp3 player");
+	      frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
+	      MPlayerPanel panel  = new MPlayerPanel();
+	      panel.setPreferredSize(new Dimension(800,600));
+	      frame.getContentPane().add (panel);
+	     
+	      
+	      frame.pack();
+	      frame.setVisible(true);
+	}	
+}

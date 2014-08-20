@@ -1,0 +1,162 @@
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+
+
+
+@SuppressWarnings("serial")
+public class MPlayerPanel extends JPanel {
+	
+	private JButton playButton, stopButton, exitButton, loadMp3Button, saveButton, openButton;
+	private JTable table = null;
+	
+	MPlayerPanel() {
+	
+		this.setLayout(new BorderLayout());
+	
+		// buttonPanelTop contains the top row of buttons:
+		// load mp3 files, save and open
+		JPanel buttonPanelTop = new JPanel();
+		buttonPanelTop.setLayout(new GridLayout(1,3));
+		loadMp3Button = new JButton("Load mp3");
+		saveButton = new JButton("Save Library");
+		openButton = new JButton("Load Library");
+
+		loadMp3Button.addActionListener(new MyButtonListener());
+		saveButton.addActionListener(new MyButtonListener());
+		openButton.addActionListener(new MyButtonListener());
+
+		buttonPanelTop.add(loadMp3Button);
+		buttonPanelTop.add(saveButton);
+		buttonPanelTop.add(openButton);
+		this.add(buttonPanelTop, BorderLayout.NORTH);
+		
+	
+		// Bottom panel with panels: Play, Stop, Exit buttons
+		JPanel buttonPanelBottom = new JPanel();
+		buttonPanelBottom.setLayout(new GridLayout(1,3));
+		playButton = new JButton("Play");
+		stopButton = new JButton("Stop");
+		exitButton = new JButton("Exit");
+
+		playButton.addActionListener(new MyButtonListener());
+		stopButton.addActionListener(new MyButtonListener());
+		exitButton.addActionListener(new MyButtonListener());
+
+		buttonPanelBottom.add(playButton);
+		buttonPanelBottom.add(stopButton);
+		buttonPanelBottom.add(exitButton);
+		this.add(buttonPanelBottom, BorderLayout.SOUTH);
+	
+	}
+	
+	public void loadTable()
+	{
+		int size = PlayerBackEnd.librarySize();
+		String[][] tableElems = new String[size][4];
+		String[] columnNames = {"Title", "Artist", "Album", "Genre"};
+		for (int i=0; i<size; i++)
+		{
+			tableElems[i][0] = PlayerBackEnd.getSong(i).songTitle;
+			tableElems[i][1] = PlayerBackEnd.getSong(i).artist;
+			tableElems[i][2] = PlayerBackEnd.getSong(i).albumName;
+			tableElems[i][3] = PlayerBackEnd.getSong(i).genre;
+		}
+	
+		// you do not need to change the code below
+		table = new JTable(tableElems, columnNames );
+		JScrollPane scrollPane = new JScrollPane( table );
+		add( scrollPane, BorderLayout.CENTER );
+		
+		updateUI();
+	
+	}
+	
+	class MyButtonListener implements ActionListener {
+
+		public void actionPerformed(ActionEvent e) {
+			// The function that does something whenever each button is pressed
+			if (e.getSource() == loadMp3Button) {
+				JFileChooser chooser = new JFileChooser();
+				chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+				int returnVal = chooser.showOpenDialog(getParent());
+				if (returnVal==JFileChooser.APPROVE_OPTION)
+				{
+					File file = chooser.getSelectedFile();
+					if (file.isDirectory())
+					{
+						PlayerBackEnd.loadAllMP3(file);
+					}
+					if (file.isFile())
+					{
+						PlayerBackEnd.loadSingleMP3(file);
+					}
+				}
+				PlayerBackEnd.sortSongs();
+				loadTable();
+			}
+			else if (e.getSource() == saveButton) {
+				JFileChooser chooser = new JFileChooser();
+				int returnVal = chooser.showSaveDialog(getParent());
+				if (returnVal==JFileChooser.APPROVE_OPTION)
+				{
+					File file = chooser.getSelectedFile();
+					PlayerBackEnd.saveLibrary(file);
+				}
+				
+			}
+			else if (e.getSource() == openButton) {
+				JFileChooser chooser = new JFileChooser();
+				int returnVal = chooser.showOpenDialog(getParent());
+				if (returnVal==JFileChooser.APPROVE_OPTION)
+				{
+					File file = chooser.getSelectedFile();
+					PlayerBackEnd.loadLibrary(file);
+					PlayerBackEnd.sortSongs();
+					loadTable();
+				}
+			}
+			else if (e.getSource() == playButton) {
+					
+				int selectedSong = table.getSelectedRow();
+				// FILL IN CODE: make the calls to other methods/classes, do NOT place all the code here
+				// find the selected song in the arraylist of songs
+				// create a thread to play it as described in the handout.
+			}
+			else if (e.getSource() == stopButton) {
+				// FILL IN CODE: make the calls to other methods/classes, do NOT place all the code here
+				// stop the current running thread
+			}
+			else if (e.getSource() == exitButton) {
+				// Exit the program
+				System.exit(0);
+			}
+		}
+	}
+	
+	
+	
+	public static void main(String[] args) {
+		JFrame frame = new JFrame ("Mp3 player");
+	      frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
+	      MPlayerPanel panel  = new MPlayerPanel();
+	      panel.setPreferredSize(new Dimension(400,400));
+	      frame.getContentPane().add (panel);
+	     
+	      
+	      frame.pack();
+	      frame.setVisible(true);
+	}
+	
+	
+}
